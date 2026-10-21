@@ -19,6 +19,8 @@
 
 适合：客户要把 Demo 从本机/内网挪到可远程访问环境时一并卖。
 
+需要 **OAuth2 + 按 tool 的 scope + 参数校验** 的完整短包（可单独挂单，参考 ¥2–5k / 3–7 天）见同目录 `附录-MCP-OAuth鉴权短包.md`；插接位置见 `docs/oauth-outline.md`。
+
 ---
 
 ## B. GCP OpenAPI → MCP（相邻短注 · Public Preview）

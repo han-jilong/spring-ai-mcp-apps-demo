@@ -66,3 +66,19 @@ should see a pair of dice, rolled to some values. Then ask "What was the
 result?" to verify that the application was about to update the model
 context. Then click the "Roll Dice" button to re-roll the dice and ask
 again.
+
+Agent audit guardrail (optional demo tools)
+---
+Alongside the dice MCP App, this repo includes a **minimal write-confirm + audit** demo
+(no OAuth by default; does not change the dice UI):
+
+- Read-only tools (`list-account-notes`, `get-demo-balance`, `get-audit-log`) run immediately.
+- Mutating tools (`propose-set-account-note`, `propose-demo-transfer`) return a `confirmToken`;
+  call `confirm-pending-action` to apply.
+- **Amount limits (CNY):** soft threshold **100** → PENDING message flags over-soft; hard limit **10000** → `DENIED` immediately (token cannot bypass).
+- Audit: append-only decisions `ALLOWED_READ` / `PENDING` / `APPROVED` / `DENIED`. In-memory ring (max 500) + JSONL file `./data/audit-log.jsonl` (survives restart; demo-grade, not WORM).
+
+Sales appendix (Chinese): `附录-Agent审计护栏短包.md` · outline: `docs/audit-guard-outline.md`.
+
+Quick verify after `bootRun` (MCP client or any tools/call): read → propose → confirm → `get-audit-log`.
+
