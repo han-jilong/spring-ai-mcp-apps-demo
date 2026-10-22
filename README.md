@@ -82,3 +82,17 @@ Sales appendix (Chinese): `附录-Agent审计护栏短包.md` · outline: `docs/
 
 Quick verify after `bootRun` (MCP client or any tools/call): read → propose → confirm → `get-audit-log`.
 
+RCM vertical demo (fictional healthcare coding)
+---
+Alongside the account audit tools, **GuardedRcmTools** demos a healthcare RCM human-confirm gate
+(no PHI, no live insurance / clearinghouse; not clinical advice):
+
+- Read-only: `list-suggested-charges`, `get-claim-draft` → immediate + audit `ALLOWED_READ` (patient label `DEMO-PATIENT`, codes like `DEMO-CHG-100` / `X99.1`).
+- Mutating: `propose-apply-charge-codes` → `PENDING` + `confirmToken` only; apply via existing `confirm-pending-action`.
+- Limits (CNY / count): soft amount **500** / soft code count **5** → PENDING cue; hard amount **10000** / hard code count **20** → `DENIED`.
+- Reuses shared `ConfirmationGate` + `AuditLogStore` JSONL; does not change the Dice MCP Apps UI.
+
+Sales appendix: `附录-医疗RCM人机复核短包.md` · outline: `docs/rcm-guard-outline.md`.
+Status: public demo includes RCM vertical (fictional data only; no PHI).
+
+
