@@ -80,6 +80,9 @@ Alongside the dice MCP App, this repo includes a **minimal write-confirm + audit
 
 Sales appendix (Chinese): `附录-Agent审计护栏短包.md` · outline: `docs/audit-guard-outline.md`.
 
+Agent treasury / send-money human-confirm narrative (same tools; sandbox ledger only—no live Stripe Treasury):
+Sales appendix: `附录-Agent资金人审闸短包.md`.
+
 Quick verify after `bootRun` (MCP client or any tools/call): read → propose → confirm → `get-audit-log`.
 
 RCM vertical demo (fictional healthcare coding)
