@@ -83,6 +83,12 @@ Sales appendix (Chinese): `附录-Agent审计护栏短包.md` · outline: `docs/
 Agent treasury / send-money human-confirm narrative (same tools; sandbox ledger only—no live Stripe Treasury):
 Sales appendix: `附录-Agent资金人审闸短包.md`.
 
+### Dual path: MCP confirmToken + Spring AI 2.1 Tool Call Confirmation
+- **MCP path (unchanged):** `GuardedAccountTools` `@McpTool` + `ConfirmationGate` explicit `confirmToken` (propose → `confirm-pending-action`).
+- **ChatClient path (2.1+):** `TreasuryChatTools` `@Tool(requiresConfirmation=true)` on mutating tools (`demoTransfer`, `setAccountNote`); read-only stay ungated. App resumes with `ToolCallDecisions.allow` / `deny` and `ToolCallingManager.executeToolCalls(...)`.
+- Boot props: `spring.ai.tools.confirmation.enabled` / `spring.ai.tools.confirmation.tools` (see `application.properties`).
+- Versions: Spring AI **2.1.0-RC1**, Spring Boot **4.2.0-RC1**. Docs: [Tool Call Confirmation](https://docs.spring.io/spring-ai/reference/2.1/api/tools/tool-call-confirmation.html). Sandbox ledger only.
+
 Quick verify after `bootRun` (MCP client or any tools/call): read → propose → confirm → `get-audit-log`.
 
 RCM vertical demo (fictional healthcare coding)

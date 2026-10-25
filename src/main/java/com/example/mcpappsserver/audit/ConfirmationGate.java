@@ -11,8 +11,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
- * Explicit confirmation gate for write/mutating tools.
+ * MCP-facing explicit confirmation gate for write/mutating tools ({@code confirmToken}).
  * Read-only tools never call this.
+ * <p>
+ * Remains the token gate for {@code @McpTool} / MCP clients ({@code propose-*} →
+ * {@code confirm-pending-action}). The ChatClient / {@code @Tool} path uses Spring AI 2.1+
+ * official Tool Call Confirmation ({@code requiresConfirmation}, {@code ToolCallDecisions},
+ * {@code ToolCallingManager.executeToolCalls}) instead — see {@code TreasuryChatTools}.
  */
 @Component
 public class ConfirmationGate {

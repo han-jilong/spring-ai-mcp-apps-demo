@@ -30,3 +30,16 @@ OAuth（`附录-MCP-OAuth鉴权短包.md`）管**谁能调**；本护栏管**调
 ## 验证（无 key）
 
 见 README「Agent 审计护栏」节：起服后用 MCP client / curl 调 `list-account-notes` → `propose-*` → `confirm-pending-action` → `get-audit-log`。
+
+
+## Dual path（2026-10-25）：MCP confirmToken + Spring AI 2.1 official confirmation
+
+| 路径 | 面向 | 机制 | 类 |
+|------|------|------|----|
+| MCP | MCP clients / `@McpTool` | `ConfirmationGate` 显式 `confirmToken`（propose → confirm-pending-action） | `GuardedAccountTools` |
+| ChatClient | `ChatClient` / `@Tool` | Spring AI **2.1+** `@Tool(requiresConfirmation=true)` → `ToolCallConfirmationPolicy` → `ToolCallDecisions.allow/deny` → `ToolCallingManager.executeToolCalls` | `TreasuryChatTools` |
+
+- 只读 tool 两路都不闸；动钱 / 写 note 才闸。
+- Boot 属性（ChatClient 路）：`spring.ai.tools.confirmation.enabled`、`spring.ai.tools.confirmation.tools`（见 `application.properties`）。
+- 官方文档：https://docs.spring.io/spring-ai/reference/2.1/api/tools/tool-call-confirmation.html
+- 依赖：`springAiVersion=2.1.0-RC1` + Boot `4.2.0-RC1`；沙箱账本，无真实 Stripe/支付宝。

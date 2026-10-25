@@ -16,13 +16,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Minimal Agent audit-guardrail demo tools.
+ * MCP-facing Agent audit-guardrail / treasury demo tools ({@code @McpTool}).
  * <ul>
  *   <li>Read-only tools run immediately (no confirm gate).</li>
- *   <li>Mutating tools require an explicit confirm token.</li>
+ *   <li>Mutating tools require an explicit {@code confirmToken} via {@link ConfirmationGate}.</li>
  *   <li>Soft threshold (100 CNY) cues PENDING; hard limit (10000 CNY) auto-denies.</li>
  *   <li>Audit rows persist to JSONL so restart keeps history.</li>
  * </ul>
+ * <p>
+ * Dual path: MCP clients use this class + {@link ConfirmationGate}. ChatClient / {@code @Tool}
+ * consumers use {@link TreasuryChatTools} with Spring AI 2.1+ official {@code requiresConfirmation}
+ * / {@code ToolCallDecisions}. Both share this sandbox ledger (no live Stripe/Alipay).
  * Does not touch {@link DiceApp} — MCP Apps UI demo stays intact.
  */
 @Service
@@ -112,10 +116,8 @@ public class GuardedAccountTools {
     String safeValue = value.length() > 200 ? value.substring(0, 200) : value;
     String args = "key=" + safeKey + ",valueLen=" + safeValue.length();
 
-    PendingAction pending = gate.propose("set-account-note", args, () -> {
-      notes.put(safeKey, safeValue);
-      return "APPLIED: note '" + safeKey + "' set";
-    });
+    PendingAction pending = gate.propose("set-account-note", args,
+        () -> applySetAccountNoteUnlocked(safeKey, safeValue));
 
     auditLog.append("agent", "propose-set-account-note", args, "PENDING",
         "confirmToken=" + pending.confirmToken() + " expires=" + pending.expiresAt());
@@ -161,11 +163,8 @@ public class GuardedAccountTools {
     final String payee = to == null ? "" : to.trim();
     boolean overSoft = amt.compareTo(CONFIRM_THRESHOLD) > 0;
 
-    PendingAction pending = gate.propose("demo-transfer", args, () -> {
-      demoBalance = demoBalance.subtract(amt);
-      return "APPLIED: transferred CNY " + amt.toPlainString() + " to '" + payee
-          + "'; remaining=" + demoBalance.toPlainString();
-    });
+    PendingAction pending = gate.propose("demo-transfer", args,
+        () -> applyDemoTransferUnlocked(payee, amt));
 
     auditLog.append("agent", "propose-demo-transfer", args, "PENDING",
         "confirmToken=" + pending.confirmToken()
@@ -180,7 +179,50 @@ public class GuardedAccountTools {
         + " from balance " + demoBalance.toPlainString();
   }
 
-  @McpTool(
+  /**
+   * Direct apply for ChatClient {@code @Tool(requiresConfirmation)} path after the framework
+   * already obtained {@code ToolCallDecision.allow}. Still enforces hard limit / balance.
+   * MCP clients should keep using propose-* + confirm-pending-action instead.
+   */
+  public String applySetAccountNote(String key, String value) {
+    if (key == null || key.isBlank() || value == null) {
+      return "DENIED: key and value are required";
+    }
+    String safeKey = key.trim();
+    String safeValue = value.length() > 200 ? value.substring(0, 200) : value;
+    return applySetAccountNoteUnlocked(safeKey, safeValue);
+  }
+
+  /**
+   * Direct apply for ChatClient confirmation path. Hard limit and balance checks still apply.
+   */
+  public String applyDemoTransfer(String to, BigDecimal amount) {
+    if (amount == null || amount.signum() <= 0) {
+      return "DENIED: amount must be positive";
+    }
+    if (amount.compareTo(HARD_LIMIT) > 0) {
+      return "DENIED: amount exceeds hard limit CNY " + HARD_LIMIT.toPlainString()
+          + " (amount-limit guardrail)";
+    }
+    if (amount.compareTo(demoBalance) > 0) {
+      return "DENIED: insufficient demo balance " + demoBalance.toPlainString();
+    }
+    String payee = to == null ? "" : to.trim();
+    return applyDemoTransferUnlocked(payee, amount);
+  }
+
+  String applySetAccountNoteUnlocked(String safeKey, String safeValue) {
+    notes.put(safeKey, safeValue);
+    return "APPLIED: note '" + safeKey + "' set";
+  }
+
+  String applyDemoTransferUnlocked(String payee, BigDecimal amt) {
+    demoBalance = demoBalance.subtract(amt);
+    return "APPLIED: transferred CNY " + amt.toPlainString() + " to '" + payee
+        + "'; remaining=" + demoBalance.toPlainString();
+  }
+
+    @McpTool(
       name = "confirm-pending-action",
       title = "Confirm pending mutating action",
       description = "Consumes a confirmToken from propose-* tools and executes the pending write. Invalid/expired tokens are DENIED and audited.")

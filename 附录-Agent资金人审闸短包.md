@@ -5,7 +5,7 @@
 > 对齐 [Stripe Treasury for agents](https://stripe.com/newsroom/news/treasury-for-agents)（2026-10-21）公开叙述：**读余额可自动，动钱（付发票 / 转账）默认要人审**。  
 > 垂直化已有 **ConfirmationGate + GuardedAccountTools**（可叠 GuardedRcmTools 叙事）。  
 > **风险一句**：大陆个人难直接用 Stripe Treasury；作品集用**沙箱 / 海外主体**叙事；**稳定币实盘有合规红线**——本包只做权限闸 Demo，不承诺境内可开户、不代付、不碰实盘资金。  
-> **状态：已挂渠道 + 本附录已推公开仓**（2026-10-23 Asia/Shanghai；韩确认挂后接单助手执行；代码 GuardedAccountTools 早已在 main）。
+> **状态：已挂渠道 + 本附录已推公开仓**（2026-10-23）；**2026-10-25** 本地对齐 Spring AI **2.1.0-RC1** 官方 Tool Call Confirmation（ChatClient `@Tool(requiresConfirmation)` 双路径；MCP `confirmToken` 仍保留）。推远程需韩说「推」。
 
 ## 决策（对齐 MCP Apps，不乱投）
 - **Upwork**：不新建付费 Catalog；英文话术用于匹配 agent treasury / payment approval / human-in-the-loop money move / MCP audit 类岗位提案。叠作品集 [spring-ai-mcp-apps-demo](https://github.com/han-jilong/spring-ai-mcp-apps-demo)。
@@ -64,10 +64,24 @@ Agent 资金人审闸：查余额自由、转账/付发票必须 confirmToken �
 ## Upwork proposal hook
 Agent treasury guard on Spring MCP: balance/read tools → `ALLOWED_READ`; send-money / transfer stays `PENDING` until `confirmToken`; hard amount limits + append-only audit. Matches Stripe’s public “approve money movement” model (sandbox narrative only—no live Treasury onboarding). Demo in https://github.com/han-jilong/spring-ai-mcp-apps-demo (`GuardedAccountTools`). Fixed package ¥2–5k / 3–6 days equivalent. Not monthly ops.
 
+
+## 双路径对齐 Spring AI 2.1 官方人审（2026-10-25）
+
+| 路径 | 机制 | 代码 |
+|------|------|------|
+| **MCP**（原有） | 显式 `confirmToken`：`propose-*` → `confirm-pending-action` | `GuardedAccountTools` + `ConfirmationGate` |
+| **ChatClient**（新增） | 官方 `@Tool(requiresConfirmation=true)` → `ToolCallConfirmationPolicy` → `ToolCallDecisions.allow/deny` → `ToolCallingManager.executeToolCalls` | `TreasuryChatTools`（`demoTransfer` / `setAccountNote` 需确认；只读不闸） |
+
+- Boot：`spring.ai.tools.confirmation.enabled=true`；`spring.ai.tools.confirmation.tools=demoTransfer,setAccountNote`
+- 版本：Spring AI `2.1.0-RC1` + Boot `4.2.0-RC1`
+- 文档：https://docs.spring.io/spring-ai/reference/2.1/api/tools/tool-call-confirmation.html
+- **仍无**真实 Stripe/支付宝；沙箱账本 + JSONL 审计。
+
 ## 源码挂点
 - 路径：`/workspace/spring-ai-mcp-apps-demo/`
-- 类：`GuardedAccountTools` + `ConfirmationGate` + `AuditLogStore`；共用 `confirm-pending-action` / `get-audit-log`
-- 现成 tool：`get-demo-balance`、`propose-demo-transfer`、`propose-set-account-note`
+- 类：`GuardedAccountTools`（MCP）+ `TreasuryChatTools`（ChatClient `@Tool`）+ `ConfirmationGate` + `AuditLogStore`
+- MCP tool：`get-demo-balance`、`propose-demo-transfer`、`propose-set-account-note`、`confirm-pending-action`
+- Chat `@Tool`：`getDemoBalance` / `listAccountNotes` / `getAuditLog`（只读）；`demoTransfer` / `setAccountNote`（`requiresConfirmation=true`）
 - 大纲：`docs/audit-guard-outline.md` · 附录：`附录-Agent资金人审闸短包.md`
 - 公开仓：https://github.com/han-jilong/spring-ai-mcp-apps-demo
 - 引用：[newsroom](https://stripe.com/newsroom/news/treasury-for-agents) · [docs](https://docs.stripe.com/treasury/agents)
