@@ -104,4 +104,60 @@ Alongside the account audit tools, **GuardedRcmTools** demos a healthcare RCM hu
 Sales appendix: `附录-医疗RCM人机复核短包.md` · outline: `docs/rcm-guard-outline.md`.
 Status: public demo includes RCM vertical (fictional data only; no PHI).
 
+作品集 MCP 最小演示
+---
+面向面试/接单的可点路径（输入 → 工具调用 → 可选人审 → 审计），不讲概念。
+
+### 本骨架提供什么
+- 包：`com.example.mcpappsserver.portfolio.PortfolioMcpTools`
+- 只读 `@McpTool`（无副作用，带 `readOnlyHint`）：
+  - `portfolio-health` — 探活
+  - `portfolio-echo` — 回显入参（烟雾测试）
+  - `portfolio-list-demo-accounts` — 固定沙箱账户目录
+- 每次调用写审计 `ALLOWED_READ`（复用 `AuditLogStore` JSONL）。
+- **可选人审**：同仓已有 `GuardedAccountTools`（`propose-*` → `confirmToken` → `confirm-pending-action`）+ `ConfirmationGate`；本骨架不重复写可变工具，避免破坏现有测试。
+
+Client 侧：本仓是 **MCP Server**；作品集演示用 **MCP Inspector** 当 Client（无需再起 Ollama/第二个 Boot 模块）。完整 Spring AI MCP Client + ChatClient 可另开仓按 [HowToDoInJava](https://howtodoinjava.com/spring-ai/spring-ai-mcp/) 加。
+
+### 如何启动
+```bash
+./gradlew bootRun
+# 或
+./gradlew build && java -jar build/libs/mcp-apps-server-0.0.1-SNAPSHOT.jar
+```
+监听 `http://localhost:3001/mcp`（Streamable HTTP）。
+
+### 如何用 MCP Inspector（当 Client）
+需本机 Node.js。先 `bootRun`，再：
+
+```bash
+# 列出工具（应看到 portfolio-* 与既有 guard/dice 工具）
+npx -y @modelcontextprotocol/inspector --cli http://localhost:3001/mcp --transport http --method tools/list
+
+# 调用只读骨架
+npx -y @modelcontextprotocol/inspector --cli http://localhost:3001/mcp --transport http --method tools/call --tool-name portfolio-health
+npx -y @modelcontextprotocol/inspector --cli http://localhost:3001/mcp --transport http --method tools/call --tool-name portfolio-echo --tool-arg message=hello
+npx -y @modelcontextprotocol/inspector --cli http://localhost:3001/mcp --transport http --method tools/call --tool-name portfolio-list-demo-accounts
+
+# 可选人审闭环（已有工具）
+npx -y @modelcontextprotocol/inspector --cli http://localhost:3001/mcp --transport http --method tools/call --tool-name get-demo-balance
+# propose-demo-transfer → 记下 confirmToken → confirm-pending-action → get-audit-log
+```
+
+浏览器 UI：去掉 `--cli` 打开 Inspector。
+
+### 与人审闸的关系
+| 步骤 | 工具 | 闸 |
+|------|------|----|
+| 输入→只读调用 | `portfolio-*` / `list-account-notes` / `get-demo-balance` | 无；审计 `ALLOWED_READ` |
+| 可变提议 | `propose-demo-transfer` 等 | `ConfirmationGate` 发 `confirmToken`（`PENDING`） |
+| 人审确认 | `confirm-pending-action` | 消费 token → `APPROVED` / 无效则 `DENIED` |
+| 审计回看 | `get-audit-log` | 只读 |
+
+ChatClient 双路径（`TreasuryChatTools` + Spring AI 2.1 `requiresConfirmation`）见上文「Dual path」；与 MCP confirmToken 并存，互不替换。
+
+### 部署安全清单（演示级提醒）
+本地演示 `/mcp` **默认无鉴权**。对外前请：Spring Security / OAuth 护 `/mcp`、按调用方授权、服务端校验入参、勿把真实资金/PHI 挂上。详见教程文末与本仓 `附录-MCP-OAuth鉴权短包.md`。
+
+版本：Spring AI **2.1.0-RC1** · Boot **4.2.0-RC1** · Java 21。
 
