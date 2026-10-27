@@ -5,7 +5,9 @@ import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -84,4 +86,66 @@ public class PortfolioMcpTools {
         "count=" + demoAccounts.size());
     return body;
   }
+
+  /**
+   * Demo-only 「沪青年租补」资格预检：硬编码 3 条演示规则，非真实政策/非申报通道。
+   */
+  @McpTool(
+      name = "portfolio-policy-eligibility-demo",
+      title = "沪青年租补资格演示预检 (read-only)",
+      description = "Read-only DEMO: hardcoded Shanghai youth rent-subsidy style rules (age/workOrHukou/rentVsIncome). Returns possible-match + disclaimer. NOT real policy; not a filing channel. No confirmation required.",
+      annotations = @McpTool.McpAnnotations(
+          readOnlyHint = true,
+          destructiveHint = false,
+          idempotentHint = true,
+          openWorldHint = false))
+  public String portfolioPolicyEligibilityDemo(
+      @McpToolParam(description = "Age in years (integer)", required = true) Integer age,
+      @McpToolParam(description = "true if has Shanghai hukou or local work/residence credential (demo flag)", required = true)
+          Boolean hasShanghaiWorkOrHukou,
+      @McpToolParam(description = "Monthly rent CNY", required = true) Integer monthlyRentCny,
+      @McpToolParam(description = "Monthly take-home income CNY", required = true) Integer monthlyIncomeCny) {
+
+    List<String> pass = new ArrayList<>();
+    List<String> fail = new ArrayList<>();
+
+    // Rule 1 (demo): youth band 18–35
+    if (age != null && age >= 18 && age <= 35) {
+      pass.add("R1-age: " + age + " in [18,35]");
+    }
+    else {
+      fail.add("R1-age: need 18–35 (got " + age + ")");
+    }
+
+    // Rule 2 (demo): local work/hukou flag
+    if (Boolean.TRUE.equals(hasShanghaiWorkOrHukou)) {
+      pass.add("R2-local: shanghai work/hukou flag=true");
+    }
+    else {
+      fail.add("R2-local: need hasShanghaiWorkOrHukou=true");
+    }
+
+    // Rule 3 (demo): rent burden — rent > 0, income > 0, rent/income <= 40%, rent <= 4500
+    int rent = monthlyRentCny == null ? -1 : monthlyRentCny;
+    int income = monthlyIncomeCny == null ? -1 : monthlyIncomeCny;
+    if (rent > 0 && income > 0 && rent <= 4500 && rent * 100 <= income * 40) {
+      pass.add("R3-burden: rent=" + rent + " income=" + income + " within demo caps");
+    }
+    else {
+      fail.add("R3-burden: need rent>0, income>0, rent<=4500, rent/income<=40% (got rent="
+          + monthlyRentCny + " income=" + monthlyIncomeCny + ")");
+    }
+
+    boolean possible = fail.isEmpty();
+    String args = "age=" + age + ",local=" + hasShanghaiWorkOrHukou
+        + ",rent=" + monthlyRentCny + ",income=" + monthlyIncomeCny;
+    String body = "possibleMatch=" + possible
+        + " passed=[" + String.join("; ", pass) + "]"
+        + " failed=[" + String.join("; ", fail) + "]"
+        + " DISCLAIMER=演示规则非真实沪青年租补政策，不能用于申报或承诺；请以官方渠道为准。";
+    auditLog.append("agent", "portfolio-policy-eligibility-demo", args, "ALLOWED_READ",
+        "possibleMatch=" + possible);
+    return body;
+  }
+
 }

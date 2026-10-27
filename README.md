@@ -114,6 +114,7 @@ Status: public demo includes RCM vertical (fictional data only; no PHI).
   - `portfolio-health` — 探活
   - `portfolio-echo` — 回显入参（烟雾测试）
   - `portfolio-list-demo-accounts` — 固定沙箱账户目录
+  - `portfolio-policy-eligibility-demo` — 沪青年租补**演示**资格预检（硬编码 3 条规则；非真政策）
 - 每次调用写审计 `ALLOWED_READ`（复用 `AuditLogStore` JSONL）。
 - **可选人审**：同仓已有 `GuardedAccountTools`（`propose-*` → `confirmToken` → `confirm-pending-action`）+ `ConfirmationGate`；本骨架不重复写可变工具，避免破坏现有测试。
 
@@ -138,6 +139,7 @@ npx -y @modelcontextprotocol/inspector --cli http://localhost:3001/mcp --transpo
 npx -y @modelcontextprotocol/inspector --cli http://localhost:3001/mcp --transport http --method tools/call --tool-name portfolio-health
 npx -y @modelcontextprotocol/inspector --cli http://localhost:3001/mcp --transport http --method tools/call --tool-name portfolio-echo --tool-arg message=hello
 npx -y @modelcontextprotocol/inspector --cli http://localhost:3001/mcp --transport http --method tools/call --tool-name portfolio-list-demo-accounts
+npx -y @modelcontextprotocol/inspector --cli http://localhost:3001/mcp --transport http --method tools/call --tool-name portfolio-policy-eligibility-demo --tool-arg age=28 --tool-arg hasShanghaiWorkOrHukou=true --tool-arg monthlyRentCny=3000 --tool-arg monthlyIncomeCny=10000
 
 # 可选人审闭环（已有工具）
 npx -y @modelcontextprotocol/inspector --cli http://localhost:3001/mcp --transport http --method tools/call --tool-name get-demo-balance

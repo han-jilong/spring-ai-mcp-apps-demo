@@ -56,6 +56,30 @@ class PortfolioMcpToolsTest {
     assertTrue(echo.startsWith("echo="));
   }
 
+
+  @Test
+  void policyEligibilityDemoMatchAndMismatchAreReadOnlyAndAudited() throws Exception {
+    AuditLogStore store = newStore(tmp.resolve("audit-policy.jsonl"));
+    PortfolioMcpTools tools = new PortfolioMcpTools(store);
+
+    String ok = tools.portfolioPolicyEligibilityDemo(28, true, 3000, 10000);
+    assertTrue(ok.contains("possibleMatch=true"), ok);
+    assertTrue(ok.contains("DISCLAIMER="), ok);
+    assertTrue(ok.contains("R1-age"), ok);
+
+    String no = tools.portfolioPolicyEligibilityDemo(40, false, 6000, 8000);
+    assertTrue(no.contains("possibleMatch=false"), no);
+    assertTrue(no.contains("R1-age"), no);
+    assertTrue(no.contains("R2-local"), no);
+    assertTrue(no.contains("R3-burden"), no);
+
+    List<AuditEntry> rows = store.recent(5);
+    assertEquals(2, rows.stream()
+        .filter(e -> "portfolio-policy-eligibility-demo".equals(e.toolName())
+            && "ALLOWED_READ".equals(e.decision()))
+        .count());
+  }
+
   private static AuditLogStore newStore(Path file) throws Exception {
     var ctor = AuditLogStore.class.getDeclaredConstructor(Path.class);
     ctor.setAccessible(true);
