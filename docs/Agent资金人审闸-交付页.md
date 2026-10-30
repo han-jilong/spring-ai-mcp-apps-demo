@@ -3,6 +3,8 @@
 > 一页给客户看的范围 / 验收 / 不含 / 演示。  
 > 对齐公开叙事：**读余额可自动 · 动钱默认人批后再执行**（Stripe Treasury for agents；Visa Trusted Agent「人批→代理执行」同构）。  
 > **不是投资建议，不保证成交或收益。** Demo 仅沙箱账本。
+>
+> 行业对标（叙事，非本包集成）：Natural Direct（2026-10-29）允许 Agent 运行时自选 ACH/电汇/RTP 等付款轨并设 per-agent 限额——本包口径：只能在已批预算内选轨/动钱；换轨或超限必须人审。美国金融基建，大陆个人难直接接入，仅作话术与验收对照。详见 Natural 官方稿。
 
 **演示仓库**：[han-jilong/spring-ai-mcp-apps-demo](https://github.com/han-jilong/spring-ai-mcp-apps-demo)（`main`，含 ConfirmationGate + GuardedAccountTools + MCP 业务只读 tool）
 
@@ -62,4 +64,4 @@
 
 ---
 
-*备货页 · 2026-10-28 Asia/Shanghai · 零花费文档向 · 可随「推」同步进公开仓 docs/*
+*备货页 · 2026-10-28 初稿 · 2026-10-30 加选轨对齐 · Asia/Shanghai · 零花费文档向 · 可随「推」同步进公开仓 docs/*
